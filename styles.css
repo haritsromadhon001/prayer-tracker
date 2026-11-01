@@ -271,39 +271,53 @@ body {
 .next-prayer-badge {
   background: #ffffff;
   border: 1px solid var(--brand-200);
+  border-left: 4px solid var(--brand-600);
   border-radius: var(--radius-lg);
-  padding: 1rem 1.5rem;
+  padding: 0.85rem 1.25rem;
   box-shadow: var(--shadow-card);
-  text-align: right;
-  min-width: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 230px;
   transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
   cursor: pointer;
 }
 
 .next-prayer-badge:hover {
-  transform: translateY(-3px) scale(1.02);
+  transform: translateY(-2px);
   border-color: var(--brand-400);
+  border-left-color: var(--brand-700);
   box-shadow: 0 10px 24px -4px rgba(13, 148, 136, 0.22);
 }
 
+.next-prayer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: left;
+}
+
 .next-prayer-title {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--brand-700);
 }
 
 .next-prayer-time {
-  font-size: 1.5rem;
+  font-size: 1.65rem;
   font-weight: 800;
   color: var(--text-main);
-  line-height: 1.2;
-  margin: 0.25rem 0;
+  line-height: 1;
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .next-prayer-countdown {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
   font-weight: 500;
@@ -1229,23 +1243,26 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(16px);
+  background-color: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-subtle);
   z-index: 40;
-  padding: 0.4rem 0.5rem;
+  padding: 0.4rem 0.25rem calc(0.45rem + env(safe-area-inset-bottom, 8px)) 0.25rem;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
 }
 
 @media (max-width: 767px) {
   .bottom-nav {
     display: flex;
     justify-content: space-around;
+    align-items: center;
   }
   .nav-links {
     display: none;
   }
   body {
-    padding-bottom: 4.5rem;
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 8px));
   }
 }
 
@@ -1253,20 +1270,49 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
-  font-size: 0.65rem;
+  justify-content: center;
+  gap: 0.15rem;
+  font-size: 0.62rem;
   font-weight: 600;
   color: var(--text-muted);
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 0.35rem 0.5rem;
-  border-radius: var(--radius-md);
-  transition: color 0.15s ease;
+  padding: 0.35rem 0.1rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+  flex: 1;
+  min-width: 0;
+  max-width: 72px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  margin-top: 2px;
+  line-height: 1.15;
+}
+
+.bottom-nav-item svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
 }
 
 .bottom-nav-item.active {
   color: var(--brand-700);
+  font-weight: 700;
+  background: rgba(13, 148, 136, 0.08);
+}
+
+.bottom-nav-item.active svg {
+  stroke-width: 2.4;
+  transform: scale(1.05);
 }
 
 .bottom-nav-item svg {
@@ -2183,6 +2229,356 @@ body {
   background: rgba(234, 179, 8, 0.15);
   color: #fde047;
   border-color: rgba(234, 179, 8, 0.3);
+}
+
+/* ==============================================================================
+   RESPONSIVE MOBILE ADAPTATIONS (SMARTPHONES & TABLETS)
+   ============================================================================== */
+@media (max-width: 640px) {
+  /* Layout & Container */
+  .container {
+    padding: 0 0.85rem;
+  }
+  
+  .container.main-wide {
+    padding: 0 0.5rem;
+  }
+  
+  .app-header .nav-inner {
+    min-height: 3.5rem;
+    padding: 0.25rem 0;
+  }
+  
+  .brand-logo .brand-text h1 {
+    font-size: 1.05rem;
+  }
+  
+  .brand-logo .brand-text p {
+    font-size: 0.7rem;
+  }
+
+  .brand-icon img {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Greeting Section & Hero Card */
+  .greeting-section {
+    padding: 1rem 0 0.75rem 0;
+  }
+
+  .greeting-card {
+    padding: 1.15rem 1rem;
+    gap: 0.85rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .greeting-text h2 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+  }
+
+  .greeting-text p {
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .next-prayer-badge {
+    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: var(--radius-md);
+  }
+
+  .next-prayer-time {
+    font-size: 1.55rem;
+  }
+
+  .next-prayer-countdown {
+    font-size: 0.75rem;
+  }
+
+  /* Dashboard Date Selector / Stepper on Mobile */
+  .date-navigator-card {
+    padding: 0.85rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .date-navigator-left {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .date-nav-label {
+    font-size: 0.85rem;
+  }
+
+  .date-nav-stepper {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    padding: 4px;
+    box-sizing: border-box;
+  }
+
+  .btn-date-step {
+    padding: 0;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+  }
+
+  .btn-date-step .btn-date-step-text {
+    display: none; /* Hide text on mobile so buttons don't wrap awkwardly! */
+  }
+
+  .date-input-container {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .date-picker-control {
+    width: 100%;
+    text-align: center;
+    font-size: 0.875rem;
+    padding: 0.45rem 0.25rem;
+    box-sizing: border-box;
+  }
+
+  .btn-today-pill {
+    width: 100%;
+    justify-content: center;
+    padding: 0.45rem;
+    font-size: 0.78rem;
+    box-sizing: border-box;
+  }
+
+  .date-navigator-right {
+    width: 100%;
+  }
+
+  .date-status-badge {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+    font-size: 0.78rem;
+    padding: 0.45rem;
+    text-align: center;
+  }
+
+  /* Prayer Progress Summary on Mobile */
+  .progress-section {
+    margin-bottom: 1.25rem;
+  }
+
+  .progress-card {
+    padding: 1rem;
+    border-radius: var(--radius-md);
+  }
+
+  .progress-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .progress-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  .progress-counter {
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .progress-bar-bg {
+    margin-top: 0.35rem;
+    height: 0.65rem;
+  }
+
+  .progress-meta {
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+  }
+
+  .progress-meta-item {
+    font-size: 0.7rem;
+    padding: 0.22rem 0.55rem;
+  }
+
+  /* Prayer Cards on Mobile */
+  .prayers-grid {
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .prayer-card {
+    padding: 0.95rem 1rem;
+    min-height: auto;
+    border-radius: var(--radius-md);
+    gap: 0.5rem;
+  }
+
+  .prayer-card-header {
+    margin-bottom: 0.25rem;
+  }
+
+  .prayer-name {
+    font-size: 1rem;
+  }
+
+  .prayer-card-schedule {
+    font-size: 0.78rem;
+    padding: 0.2rem 0.5rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .btn-record-main {
+    padding: 0.65rem 1rem;
+    min-height: 42px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* Calendar (Riwayat) Tab on Mobile */
+  .calendar-card {
+    padding: 0.85rem;
+  }
+
+  .calendar-header {
+    gap: 0.35rem;
+  }
+
+  .calendar-nav-btn {
+    padding: 0.4rem 0.6rem;
+  }
+
+  .calendar-nav-btn .calendar-nav-btn-text {
+    display: none; /* Just arrow icons on mobile */
+  }
+
+  #calendar-month-year {
+    font-size: 1rem !important;
+  }
+
+  .calendar-day-header {
+    font-size: 0.7rem;
+    padding: 0.35rem 0;
+  }
+
+  .calendar-day-cell {
+    min-height: 40px;
+    font-size: 0.75rem;
+    padding: 0.25rem;
+  }
+
+  .calendar-day-dots {
+    gap: 2px;
+  }
+
+  .calendar-day-dots .dot {
+    width: 4px;
+    height: 4px;
+  }
+
+  /* Excel Spreadsheet Tab on Mobile */
+  .excel-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .excel-formula-bar {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .excel-ribbon-bar {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .excel-table-wrapper {
+    max-height: 60vh;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .excel-table th, .excel-table td {
+    padding: 0.4rem 0.45rem;
+    font-size: 0.78rem;
+  }
+
+  .excel-cell-btn {
+    height: 28px;
+    font-size: 0.78rem;
+  }
+
+  /* Mobile Modals (Bottom-Sheet Experience) */
+  .modal-overlay {
+    padding: 0.5rem !important;
+    align-items: flex-end !important;
+  }
+
+  .modal-content {
+    max-width: 100% !important;
+    max-height: 88vh;
+    border-radius: var(--radius-xl) var(--radius-xl) var(--radius-md) var(--radius-md) !important;
+    margin: 0 !important;
+  }
+
+  .modal-body {
+    padding: 1rem;
+    max-height: 65vh;
+  }
+
+  .modal-header, .modal-footer {
+    padding: 0.85rem 1rem;
+  }
+
+  .modal-pdf-content {
+    width: 100vw !important;
+    height: 95vh !important;
+    max-height: 95vh !important;
+    border-radius: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Metrics Grid on Small Mobile Devices */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+  }
+
+  .stat-metric-card {
+    padding: 0.85rem 0.75rem;
+  }
+
+  .stat-value {
+    font-size: 1.4rem;
+  }
+
+  .stat-label {
+    font-size: 0.68rem;
+  }
+
+  .stat-subtext {
+    font-size: 0.68rem;
+  }
 }
 
 /* ==============================================================================
