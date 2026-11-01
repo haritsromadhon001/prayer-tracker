@@ -900,7 +900,7 @@ function escapeHtml(str) {
 }
 
 // --- EXCEL MODEL TABLE RENDERER ---
-function renderExcelTable() {
+function renderExcelTable(autoScrollToToday = false) {
   const container = document.getElementById('excel-table-body');
   const footerContainer = document.getElementById('excel-table-foot');
   if (!container) return;
@@ -960,11 +960,11 @@ function renderExcelTable() {
       }
 
       return `
-        <td>
+        <td class="col-cell-prayer">
           <button class="excel-cell-btn ${cls}" 
             title="${title}" 
             onmouseenter="window.app.updateExcelFormulaBar('${day}', '${pName}', '${title}')"
-            onclick="window.app.quickToggleExcelCell('${dStr}', '${pName}')"
+            onclick="window.app.updateExcelFormulaBar('${day}', '${pName}', '${title}'); window.app.quickToggleExcelCell('${dStr}', '${pName}')"
             ondblclick="window.app.openRecordModal('${dStr}', '${pName}')">
             ${char}
           </button>
@@ -983,22 +983,26 @@ function renderExcelTable() {
     const notesSummary = dayRecords.filter(r => r.notes).map(r => `${PRAYER_SHORT_NAMES[r.prayer_name]}: ${r.notes}`).join('; ');
 
     rowsHtml += `
-      <tr style="${isToday ? 'background-color:#f0fdf4;' : isWeekend ? 'background-color:#fafafa;' : ''}">
+      <tr ${isToday ? 'id="excel-row-today"' : ''} style="${isToday ? 'background-color:#f0fdf4;' : isWeekend ? 'background-color:#fafafa;' : ''}">
         <td class="col-row-idx">${day}</td>
         <td class="col-tanggal" style="${isToday ? 'font-weight:700; color:#166534;' : ''}">
-          ${day} ${monthName.substring(0, 3)} ${year}
+          <div class="col-tanggal-desktop">${day} ${monthName.substring(0, 3)} ${year}</div>
+          <div class="col-tanggal-mobile">
+            <span class="d-m-num">${day} ${monthName.substring(0, 3)}</span>
+            <span class="d-m-day ${isWeekend ? 'weekend' : ''}">${dayOfWeek}</span>
+          </div>
         </td>
-        <td style="font-weight:600; color:${isWeekend ? '#dc2626' : '#64748b'};">${dayOfWeek}</td>
+        <td class="col-hari" style="font-weight:600; color:${isWeekend ? '#dc2626' : '#64748b'};">${dayOfWeek}</td>
         ${cellHtmls}
-        <td style="font-weight:700; color:${fardhuCount === 5 ? '#15803d' : '#334155'};">${fardhuCount}/5</td>
-        <td style="font-weight:700; color:${sunnahCount > 0 ? '#b45309' : '#94a3b8'};">${sunnahCount > 0 ? '+' + sunnahCount : '0'}</td>
-        <td style="font-weight:800; color:#0f172a;">${totalDayCompleted}</td>
-        <td style="text-align:right; font-variant-numeric:tabular-nums; font-weight:600;">
+        <td class="col-wajib" style="font-weight:700; color:${fardhuCount === 5 ? '#15803d' : '#334155'};">${fardhuCount}/5</td>
+        <td class="col-sunnah" style="font-weight:700; color:${sunnahCount > 0 ? '#b45309' : '#94a3b8'};">${sunnahCount > 0 ? '+' + sunnahCount : '0'}</td>
+        <td class="col-total" style="font-weight:800; color:#0f172a;">${totalDayCompleted}</td>
+        <td class="col-progres" style="text-align:right; font-variant-numeric:tabular-nums; font-weight:600;">
           <span style="font-size:0.75rem; padding:2px 6px; border-radius:4px; background:${percentFardhu === 100 ? '#dcfce7; color:#15803d;' : percentFardhu >= 60 ? '#fef3c7; color:#b45309;' : '#f1f5f9; color:#64748b;'}">
             ${percentFardhu}%
           </span>
         </td>
-        <td style="text-align:left; font-size:0.75rem; color:#64748b; max-width:200px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(notesSummary)}">
+        <td class="col-catatan" style="text-align:left; font-size:0.75rem; color:#64748b; max-width:200px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(notesSummary)}">
           ${escapeHtml(notesSummary) || '-'}
         </td>
       </tr>
@@ -1013,23 +1017,42 @@ function renderExcelTable() {
     footerContainer.innerHTML = `
       <tr>
         <td class="col-row-idx">Σ</td>
-        <td class="col-tanggal">TOTAL (BULAN INI)</td>
-        <td>-</td>
-        <td>${colTotals.subuh}</td>
-        <td>${colTotals.zuhur}</td>
-        <td>${colTotals.asar}</td>
-        <td>${colTotals.magrib}</td>
-        <td>${colTotals.isya}</td>
-        <td style="color:#b45309;">${colTotals.dhuha}</td>
-        <td style="color:#b45309;">${colTotals.tahajud}</td>
-        <td style="color:#b45309;">${colTotals.rawatib}</td>
-        <td>${colTotals.totalFardhu}</td>
-        <td style="color:#b45309;">${colTotals.totalSunnah}</td>
-        <td>${colTotals.totalAll}</td>
-        <td style="text-align:right;">${avgFardhuRate}%</td>
-        <td>Rata-rata fardhu ${avgFardhuRate}%</td>
+        <td class="col-tanggal">
+          <div class="col-tanggal-desktop">TOTAL (BULAN INI)</div>
+          <div class="col-tanggal-mobile">TOTAL</div>
+        </td>
+        <td class="col-hari">-</td>
+        <td class="col-cell-prayer">${colTotals.subuh}</td>
+        <td class="col-cell-prayer">${colTotals.zuhur}</td>
+        <td class="col-cell-prayer">${colTotals.asar}</td>
+        <td class="col-cell-prayer">${colTotals.magrib}</td>
+        <td class="col-cell-prayer">${colTotals.isya}</td>
+        <td class="col-cell-prayer" style="color:#b45309;">${colTotals.dhuha}</td>
+        <td class="col-cell-prayer" style="color:#b45309;">${colTotals.tahajud}</td>
+        <td class="col-cell-prayer" style="color:#b45309;">${colTotals.rawatib}</td>
+        <td class="col-wajib">${colTotals.totalFardhu}</td>
+        <td class="col-sunnah" style="color:#b45309;">${colTotals.totalSunnah}</td>
+        <td class="col-total">${colTotals.totalAll}</td>
+        <td class="col-progres" style="text-align:right;">${avgFardhuRate}%</td>
+        <td class="col-catatan">Rata-rata fardhu ${avgFardhuRate}%</td>
       </tr>
     `;
+  }
+
+  // Handle auto-scroll when tab is switched
+  if (autoScrollToToday) {
+    const wrapper = document.querySelector('.excel-table-wrapper');
+    if (wrapper) {
+      wrapper.scrollLeft = 0;
+      const todayRow = document.getElementById('excel-row-today');
+      if (todayRow) {
+        setTimeout(() => {
+          wrapper.scrollTop = Math.max(0, todayRow.offsetTop - 70);
+        }, 50);
+      } else {
+        wrapper.scrollTop = 0;
+      }
+    }
   }
 }
 
@@ -1071,7 +1094,7 @@ function quickToggleExcelCell(dateStr, prayerName) {
 function updateExcelFormulaBar(day, prayerName, text) {
   const bar = document.getElementById('excel-fx-text');
   if (bar) {
-    bar.textContent = `fx: [R${day}C_${prayerName.toUpperCase()}] = ${text}`;
+    bar.textContent = `[R${day}:${prayerName.toUpperCase()}] ${text}`;
   }
 }
 
@@ -1714,7 +1737,7 @@ function switchTab(tabName) {
     }
   });
 
-  if (tabName === 'excel') renderExcelTable();
+  if (tabName === 'excel') renderExcelTable(true);
   if (tabName === 'history') renderCalendar();
   if (tabName === 'statistics') renderStatistics();
   if (tabName === 'schedule') renderScheduleTab();
