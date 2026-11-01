@@ -33,6 +33,14 @@
         </div>
       </a>
 
+      <!-- Quick Sync Button (Laptop ⇄ HP) -->
+      <div class="header-right-actions">
+        <button type="button" class="btn-sync-header" onclick="window.app.openSyncModal()" title="Sinkronkan Data Absensi Antar Perangkat (Laptop ⇄ HP)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          <span>Sync Data</span>
+        </button>
+      </div>
+
       <nav class="nav-links">
         <button class="nav-btn active" data-tab="dashboard" onclick="window.app.switchTab('dashboard')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
@@ -730,10 +738,103 @@
             <option value="HANAFI">Hanafi (Bayangan 2x)</option>
           </select>
         </div>
+
+        <div class="form-group" style="border-top:1px solid var(--border-subtle); padding-top:1rem; margin-top:1rem;">
+          <label class="form-label">Sinkronisasi Data Antar Perangkat</label>
+          <p style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:0.6rem;">
+            Pindahkan atau samakan catatan absensi sholat antara Laptop dan HP Anda.
+          </p>
+          <button type="button" class="btn-secondary" style="width:100%; justify-content:center; display:flex; align-items:center; gap:0.4rem; padding:0.5rem; font-weight:600;" onclick="document.getElementById('modal-settings').style.display='none'; window.app.openSyncModal();">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            Buka Menu Sinkronisasi Laptop ⇄ HP
+          </button>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn-secondary" onclick="document.getElementById('modal-settings').style.display='none'">Batal</button>
         <button type="button" class="btn-primary" onclick="window.app.saveSettingsModal()">Simpan Pengaturan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: SINKRONISASI DATA (LAPTOP ⇄ HP)      -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-sync" style="display:none;">
+    <div class="modal-content" style="max-width:560px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:0.55rem;">
+          <div style="background:rgba(13, 148, 136, 0.12); color:var(--brand-700); width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          </div>
+          <div>
+            <h3 class="modal-title" style="font-size:1.1rem;">Sinkronisasi Data (Laptop ⇄ HP)</h3>
+            <p style="font-size:0.75rem; color:var(--text-secondary); margin:0;">Samakan data absensi sholat di semua perangkat Anda</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="window.app.closeSyncModal()" title="Tutup">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding:1.25rem;">
+        <div style="background:#f0fdf9; border:1px solid #99f6e4; border-radius:var(--radius-md); padding:0.75rem 0.95rem; margin-bottom:1.15rem; font-size:0.78rem; color:#0f766e; line-height:1.45;">
+          💡 <strong>Kenapa di HP belum update?</strong> Browser laptop dan browser HP menyimpan data di penyimpanan lokal masing-masing (*localStorage*). Gunakan langkah di bawah untuk memindahkan catatan dari Laptop ke HP dalam hitungan detik!
+        </div>
+
+        <!-- Section 1: Salin dari Laptop -->
+        <div style="border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:0.95rem; margin-bottom:1rem; background:var(--bg-app);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.45rem; flex-wrap:wrap; gap:0.35rem;">
+            <div style="font-size:0.875rem; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:0.4rem;">
+              <span>📤 Langkah 1 (Di Laptop): Salin Data</span>
+            </div>
+            <span id="sync-records-count-info" style="font-size:0.75rem; color:var(--brand-700);">Memeriksa data...</span>
+          </div>
+          <p style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:0.65rem;">
+            Klik tombol di bawah pada laptop Anda, lalu kirimkan kodenya ke HP (misal lewat WhatsApp atau Catatan):
+          </p>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button type="button" class="btn-primary" style="flex:1; justify-content:center; padding:0.55rem 1rem; font-size:0.825rem; display:flex; align-items:center; gap:0.4rem;" onclick="window.app.copySyncCode()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              📋 Salin Kode Sinkronisasi
+            </button>
+            <button type="button" class="btn-secondary" style="padding:0.55rem 0.85rem; font-size:0.825rem; display:flex; align-items:center; gap:0.4rem;" onclick="window.app.exportJsonBackup()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Unduh Backup .json
+            </button>
+          </div>
+          <textarea id="sync-code-output" readonly style="width:100%; height:45px; margin-top:0.5rem; font-size:0.7rem; font-family:monospace; background:#ffffff; border:1px dashed var(--border-subtle); border-radius:6px; padding:0.4rem; color:var(--text-secondary); resize:none;" onclick="this.select()"></textarea>
+        </div>
+
+        <!-- Section 2: Terapkan di HP -->
+        <div style="border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:0.95rem; background:#ffffff;">
+          <div style="font-size:0.875rem; font-weight:700; color:var(--text-main); margin-bottom:0.45rem; display:flex; align-items:center; gap:0.4rem;">
+            <span>📥 Langkah 2 (Di HP): Tempel &amp; Terapkan Data</span>
+          </div>
+          <p style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:0.5rem;">
+            Buka menu <strong>Sync Data</strong> ini di HP Anda, tempelkan kode yang disalin dari laptop, lalu klik Terapkan:
+          </p>
+          <textarea id="input-sync-code" class="form-textarea" rows="3" placeholder="Tempelkan kode sinkronisasi dari Laptop di sini..." style="font-size:0.75rem; font-family:monospace; margin-bottom:0.6rem;"></textarea>
+          
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button type="button" class="btn-primary" style="flex:1; justify-content:center; padding:0.6rem 1rem; font-size:0.85rem; font-weight:700; display:flex; align-items:center; gap:0.45rem;" onclick="window.app.applySyncFromInput()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Terapkan Data ke HP Ini
+            </button>
+            <button type="button" class="btn-secondary" style="padding:0.6rem 0.85rem; font-size:0.8rem; display:flex; align-items:center; gap:0.35rem;" onclick="window.app.triggerImportFile()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Unggah File .json
+            </button>
+            <input type="file" id="sync-file-input" accept=".json" style="display:none;" onchange="window.app.handleImportFile(event)">
+          </div>
+
+          <div id="sync-import-status" style="margin-top:0.5rem; font-size:0.75rem; font-weight:600; display:none;"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:0.72rem; color:var(--text-secondary);">🔒 Data Anda aman dan diproses langsung di browser perangkat Anda.</span>
+        <button type="button" class="btn-secondary" onclick="window.app.closeSyncModal()">Tutup</button>
       </div>
     </div>
   </div>
