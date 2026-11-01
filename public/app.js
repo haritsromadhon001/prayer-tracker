@@ -177,6 +177,139 @@ function showLocationToast(msg, type = 'loading') {
   }
 }
 
+// --- MASTER DATA CATATAN SHOLAT PRIBADI ---
+// Data absensi master yang tersimpan di dalam website agar otomatis sama persis di Laptop maupun HP tanpa perlu sync
+const MASTER_RECORDS = [
+  // 1 November 2026 (Minggu) - 5 Wajib Terlaksana (100%), 3 Sunnah Tidak Terlaksana
+  {
+    id: 'rec-20261101-subuh',
+    user_id: 'user-self',
+    prayer_date: '2026-11-01',
+    prayer_name: 'subuh',
+    status: 'completed',
+    completed_at: '04:35',
+    timing_category: 'on_time',
+    congregation_type: 'alone',
+    rakaat: 2,
+    notes: null,
+    created_at: '2026-11-01T22:00:00.000Z',
+    updated_at: '2026-11-01T22:00:00.000Z'
+  },
+  {
+    id: 'rec-20261101-zuhur',
+    user_id: 'user-self',
+    prayer_date: '2026-11-01',
+    prayer_name: 'zuhur',
+    status: 'completed',
+    completed_at: '11:58',
+    timing_category: 'on_time',
+    congregation_type: 'alone',
+    rakaat: 4,
+    notes: null,
+    created_at: '2026-11-01T22:00:00.000Z',
+    updated_at: '2026-11-01T22:00:00.000Z'
+  },
+  {
+    id: 'rec-20261101-asar',
+    user_id: 'user-self',
+    prayer_date: '2026-11-01',
+    prayer_name: 'asar',
+    status: 'completed',
+    completed_at: '15:12',
+    timing_category: 'on_time',
+    congregation_type: 'alone',
+    rakaat: 4,
+    notes: null,
+    created_at: '2026-11-01T22:00:00.000Z',
+    updated_at: '2026-11-01T22:00:00.000Z'
+  },
+  {
+    id: 'rec-20261101-magrib',
+    user_id: 'user-self',
+    prayer_date: '2026-11-01',
+    prayer_name: 'magrib',
+    status: 'completed',
+    completed_at: '18:03',
+    timing_category: 'on_time',
+    congregation_type: 'alone',
+    rakaat: 3,
+    notes: null,
+    created_at: '2026-11-01T22:00:00.000Z',
+    updated_at: '2026-11-01T22:00:00.000Z'
+  },
+  {
+    id: 'rec-20261101-isya',
+    user_id: 'user-self',
+    prayer_date: '2026-11-01',
+    prayer_name: 'isya',
+    status: 'completed',
+    completed_at: '19:14',
+    timing_category: 'on_time',
+    congregation_type: 'alone',
+    rakaat: 4,
+    notes: null,
+    created_at: '2026-11-01T22:00:00.000Z',
+    updated_at: '2026-11-01T22:00:00.000Z'
+  },
+  {
+    id: 'rec-20261101-dhuha',
+    user_id: 'user-self',
+    prayer_date: '2026-11-01',
+    prayer_name: 'dhuha',
+    status: 'not_completed',
+    completed_at: null,
+    timing_category: null,
+    congregation_type: null,
+    rakaat: 0,
+    notes: null,
+    created_at: '2026-11-01T22:00:00.000Z',
+    updated_at: '2026-11-01T22:00:00.000Z'
+  },
+  {
+    id: 'rec-20261101-tahajud',
+    user_id: 'user-self',
+    prayer_date: '2026-11-01',
+    prayer_name: 'tahajud',
+    status: 'not_completed',
+    completed_at: null,
+    timing_category: null,
+    congregation_type: null,
+    rakaat: 0,
+    notes: null,
+    created_at: '2026-11-01T22:00:00.000Z',
+    updated_at: '2026-11-01T22:00:00.000Z'
+  },
+  {
+    id: 'rec-20261101-rawatib',
+    user_id: 'user-self',
+    prayer_date: '2026-11-01',
+    prayer_name: 'rawatib',
+    status: 'not_completed',
+    completed_at: null,
+    timing_category: null,
+    congregation_type: null,
+    rakaat: 0,
+    notes: null,
+    created_at: '2026-11-01T22:00:00.000Z',
+    updated_at: '2026-11-01T22:00:00.000Z'
+  },
+  // 2 November 2026 (Senin) - Subuh Terlaksana (20%)
+  {
+    id: 'rec-20261102-subuh',
+    user_id: 'user-self',
+    prayer_date: '2026-11-02',
+    prayer_name: 'subuh',
+    status: 'completed',
+    completed_at: '04:35',
+    timing_category: 'on_time',
+    congregation_type: 'alone',
+    rakaat: 2,
+    notes: null,
+    created_at: '2026-11-01T22:00:00.000Z',
+    updated_at: '2026-11-01T22:00:00.000Z'
+  }
+];
+
 // --- APP STATE ---
 const AppState = {
   currentDate: new Date(),
@@ -215,7 +348,7 @@ const AppState = {
     fetched_at: null,
   },
 
-  records: [], // Array of PrayerRecord
+  records: [...MASTER_RECORDS], // Array of PrayerRecord diinisialisasi dengan data absensi master
   reminders: [
     { prayer_name: 'subuh', enabled: true, minutes_before: 0 },
     { prayer_name: 'zuhur', enabled: true, minutes_before: 0 },
@@ -334,7 +467,18 @@ function loadLocalData() {
     }
 
     const savedRecords = localStorage.getItem('ppt_records');
-    if (savedRecords) AppState.records = JSON.parse(savedRecords);
+    let localRecs = savedRecords ? JSON.parse(savedRecords) : [];
+
+    // Pastikan seluruh data master absensi pribadi otomatis termuat baik di HP maupun Laptop
+    const recordMap = new Map();
+    MASTER_RECORDS.forEach(r => {
+      recordMap.set(`${r.prayer_date}_${r.prayer_name}`, r);
+    });
+    localRecs.forEach(r => {
+      recordMap.set(`${r.prayer_date}_${r.prayer_name}`, r);
+    });
+    AppState.records = Array.from(recordMap.values());
+    localStorage.setItem('ppt_records', JSON.stringify(AppState.records));
 
     const savedReminders = localStorage.getItem('ppt_reminders');
     if (savedReminders) AppState.reminders = JSON.parse(savedReminders);
@@ -2086,200 +2230,6 @@ function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url);
 }
 
-// --- DEVICE SYNC & DATA TRANSFER (LAPTOP <-> HP) ---
-function openSyncModal() {
-  const modal = document.getElementById('modal-sync');
-  if (!modal) return;
-
-  const fardhuCount = AppState.records.filter(r => FARDHU_PRAYERS.includes(r.prayer_name) && r.status === 'completed').length;
-  const sunnahCount = AppState.records.filter(r => SUNNAH_PRAYERS.includes(r.prayer_name) && r.status === 'completed').length;
-  const totalCount = AppState.records.length;
-
-  const countInfoEl = document.getElementById('sync-records-count-info');
-  if (countInfoEl) {
-    countInfoEl.innerHTML = `<strong>${totalCount} data tersimpan</strong> (${fardhuCount} fardhu ✓, ${sunnahCount} sunnah ✓)`;
-  }
-
-  const codeBox = document.getElementById('sync-code-output');
-  if (codeBox) {
-    codeBox.value = generateSyncPayloadString();
-  }
-
-  const inputEl = document.getElementById('input-sync-code');
-  if (inputEl) inputEl.value = '';
-
-  const statusEl = document.getElementById('sync-import-status');
-  if (statusEl) {
-    statusEl.style.display = 'none';
-    statusEl.textContent = '';
-  }
-
-  modal.style.display = 'flex';
-}
-
-function closeSyncModal() {
-  const modal = document.getElementById('modal-sync');
-  if (modal) modal.style.display = 'none';
-}
-
-function generateSyncPayloadString() {
-  const payload = {
-    app: 'Personal Prayer Tracker',
-    version: '1.2',
-    synced_at: new Date().toISOString(),
-    profile: AppState.profile,
-    settings: AppState.settings,
-    records: AppState.records,
-  };
-  const jsonStr = JSON.stringify(payload);
-  try {
-    return btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
-  } catch (e) {
-    return jsonStr;
-  }
-}
-
-async function copySyncCode() {
-  const code = generateSyncPayloadString();
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(code);
-    } else {
-      const codeBox = document.getElementById('sync-code-output');
-      if (codeBox) {
-        codeBox.select();
-        document.execCommand('copy');
-      }
-    }
-    showLocationToast('Kode sinkronisasi berhasil disalin! Silakan tempel di HP Anda.', 'success');
-  } catch (err) {
-    const codeBox = document.getElementById('sync-code-output');
-    if (codeBox) {
-      codeBox.select();
-      showLocationToast('Silakan salin manual kode di kotak atas.', 'loading');
-    }
-  }
-}
-
-function parseSyncPayload(rawInput) {
-  const trimmed = rawInput.trim();
-  if (!trimmed) throw new Error('Kode atau data kosong. Silakan tempel kode dari laptop Anda.');
-
-  if (trimmed.startsWith('{')) {
-    return JSON.parse(trimmed);
-  }
-
-  try {
-    const decoded = decodeURIComponent(atob(trimmed).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-    return JSON.parse(decoded);
-  } catch (b64Err) {
-    try {
-      return JSON.parse(atob(trimmed));
-    } catch (e2) {
-      throw new Error('Format kode sinkronisasi tidak valid. Pastikan seluruh kode tersalin lengkap.');
-    }
-  }
-}
-
-function applySyncData(payload, mode = 'merge') {
-  if (!payload || !Array.isArray(payload.records)) {
-    throw new Error('Data tidak memuat catatan absensi yang valid.');
-  }
-
-  const importedRecords = payload.records;
-
-  if (mode === 'replace') {
-    AppState.records = importedRecords;
-  } else {
-    const recordMap = new Map();
-    AppState.records.forEach(r => {
-      recordMap.set(`${r.prayer_date}_${r.prayer_name}`, r);
-    });
-    importedRecords.forEach(r => {
-      recordMap.set(`${r.prayer_date}_${r.prayer_name}`, r);
-    });
-    AppState.records = Array.from(recordMap.values());
-  }
-
-  if (payload.profile) {
-    AppState.profile = { ...AppState.profile, ...payload.profile };
-  }
-  if (payload.settings) {
-    AppState.settings = { ...AppState.settings, ...payload.settings };
-  }
-
-  saveLocalData();
-
-  renderDashboard();
-  renderExcelTable();
-  renderCalendar();
-  renderStatistics();
-
-  const totalCount = AppState.records.length;
-  showLocationToast(`Berhasil! ${importedRecords.length} catatan disinkronkan (Total: ${totalCount} data)`, 'success');
-}
-
-function applySyncFromInput() {
-  const inputEl = document.getElementById('input-sync-code');
-  const statusEl = document.getElementById('sync-import-status');
-  if (!inputEl) return;
-
-  const raw = inputEl.value.trim();
-  if (!raw) {
-    if (statusEl) {
-      statusEl.style.display = 'block';
-      statusEl.style.color = '#ef4444';
-      statusEl.textContent = 'Silakan tempelkan kode sinkronisasi dari Laptop ke kotak di atas.';
-    }
-    return;
-  }
-
-  try {
-    const payload = parseSyncPayload(raw);
-    applySyncData(payload, 'merge');
-    if (statusEl) {
-      statusEl.style.display = 'block';
-      statusEl.style.color = '#10b981';
-      statusEl.textContent = '✓ Data absensi berhasil diterapkan ke HP!';
-    }
-    setTimeout(() => {
-      closeSyncModal();
-    }, 1200);
-  } catch (err) {
-    if (statusEl) {
-      statusEl.style.display = 'block';
-      statusEl.style.color = '#ef4444';
-      statusEl.textContent = `Gagal menerapkan data: ${err.message}`;
-    }
-  }
-}
-
-function exportJsonBackup() {
-  exportData('json');
-}
-
-function triggerImportFile() {
-  const fileInput = document.getElementById('sync-file-input');
-  if (fileInput) fileInput.click();
-}
-
-function handleImportFile(event) {
-  const file = event.target.files && event.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const payload = JSON.parse(e.target.result);
-      applySyncData(payload, 'merge');
-      closeSyncModal();
-    } catch (err) {
-      alert('File backup JSON tidak valid atau rusak: ' + err.message);
-    }
-  };
-  reader.readAsText(file);
-}
-
 // --- MASTER RENDER ---
 function renderAll() {
   updateDashboardDateUI();
@@ -2744,13 +2694,6 @@ window.app = {
   renderPdfPreview,
   downloadPdfReport,
   printPdfReport,
-  openSyncModal,
-  closeSyncModal,
-  copySyncCode,
-  applySyncFromInput,
-  exportJsonBackup,
-  triggerImportFile,
-  handleImportFile,
 };
 
 // Run when DOM ready
