@@ -467,16 +467,32 @@ function loadLocalData() {
     }
 
     const savedRecords = localStorage.getItem('ppt_records');
+    const isOwner = localStorage.getItem('ppt_is_owner') === 'true' || 
+      (AppState.profile && AppState.profile.display_name && AppState.profile.display_name.toLowerCase().includes('harits'));
+
+    if (isOwner) {
+      // Perangkat milik Harits (Pemilik): tandai permanen agar data Harits selalu aman di perangkat ini
+      localStorage.setItem('ppt_is_owner', 'true');
+    }
+
     if (savedRecords !== null) {
       try {
-        AppState.records = JSON.parse(savedRecords);
+        let recs = JSON.parse(savedRecords);
+        // Jika perangkat ini BUKAN milik Harits, tapi sempat tercemar data master Harits dari versi sebelumnya:
+        if (!isOwner && Array.isArray(recs)) {
+          const hadMasterData = recs.some(r => r.id && (r.id.startsWith('rec-20261101-') || r.id.startsWith('rec-20261102-')));
+          if (hadMasterData) {
+            // Bersihkan data master Harits dari perangkat orang lain / tester secara otomatis!
+            recs = recs.filter(r => r.id && !r.id.startsWith('rec-20261101-') && !r.id.startsWith('rec-20261102-'));
+            localStorage.setItem('ppt_records', JSON.stringify(recs));
+          }
+        }
+        AppState.records = recs;
       } catch (e) {
         AppState.records = [];
       }
     } else {
-      // Pengunjung baru pertama kali membuka website:
-      // Mulai dengan lembar absensi bersih/kosong milik pengunjung sendiri (0 terlaksana),
-      // agar data sholat orang lain terisolasi dan TIDAK bercampur dengan data pribadi Harits.
+      // Pengunjung baru / tester: mulai dari lembar absensi bersih/kosong milik sendiri (0%)
       AppState.records = [];
       localStorage.setItem('ppt_records', JSON.stringify([]));
     }
@@ -514,6 +530,10 @@ function loadMasterRecords() {
   const confirmed = confirm('Muat data master absensi milik Harits (Pemilik) ke perangkat ini? Seluruh 9 catatan bawaan akan diterapkan.');
   if (!confirmed) return;
 
+  localStorage.setItem('ppt_is_owner', 'true');
+  if (!AppState.profile.display_name || AppState.profile.display_name === 'Sahabat Sholat') {
+    AppState.profile.display_name = 'Harits';
+  }
   AppState.records = JSON.parse(JSON.stringify(MASTER_RECORDS));
   saveLocalData();
   renderAll();
@@ -2643,7 +2663,12 @@ window.app = {
     const methodInput = document.getElementById('setting-method-select').value;
     const asrInput = document.getElementById('setting-asr-select').value;
 
-    if (nameInput) AppState.profile.display_name = nameInput;
+    if (nameInput) {
+      AppState.profile.display_name = nameInput;
+      if (nameInput.toLowerCase().includes('harits')) {
+        localStorage.setItem('ppt_is_owner', 'true');
+      }
+    }
 
     if (cityInput && cityInput !== 'custom') {
       AppState.settings.location_name = cityInput;
