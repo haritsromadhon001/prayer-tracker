@@ -348,7 +348,7 @@ const AppState = {
     fetched_at: null,
   },
 
-  records: [...MASTER_RECORDS], // Array of PrayerRecord diinisialisasi dengan data absensi master
+  records: [], // Default kosong untuk pengunjung baru agar data terisolasi mandiri
   reminders: [
     { prayer_name: 'subuh', enabled: true, minutes_before: 0 },
     { prayer_name: 'zuhur', enabled: true, minutes_before: 0 },
@@ -467,18 +467,19 @@ function loadLocalData() {
     }
 
     const savedRecords = localStorage.getItem('ppt_records');
-    let localRecs = savedRecords ? JSON.parse(savedRecords) : [];
-
-    // Pastikan seluruh data master absensi pribadi otomatis termuat baik di HP maupun Laptop
-    const recordMap = new Map();
-    MASTER_RECORDS.forEach(r => {
-      recordMap.set(`${r.prayer_date}_${r.prayer_name}`, r);
-    });
-    localRecs.forEach(r => {
-      recordMap.set(`${r.prayer_date}_${r.prayer_name}`, r);
-    });
-    AppState.records = Array.from(recordMap.values());
-    localStorage.setItem('ppt_records', JSON.stringify(AppState.records));
+    if (savedRecords !== null) {
+      try {
+        AppState.records = JSON.parse(savedRecords);
+      } catch (e) {
+        AppState.records = [];
+      }
+    } else {
+      // Pengunjung baru pertama kali membuka website:
+      // Mulai dengan lembar absensi bersih/kosong milik pengunjung sendiri (0 terlaksana),
+      // agar data sholat orang lain terisolasi dan TIDAK bercampur dengan data pribadi Harits.
+      AppState.records = [];
+      localStorage.setItem('ppt_records', JSON.stringify([]));
+    }
 
     const savedReminders = localStorage.getItem('ppt_reminders');
     if (savedReminders) AppState.reminders = JSON.parse(savedReminders);
@@ -496,6 +497,58 @@ function saveLocalData() {
   } catch (e) {
     console.warn('Failed saving local storage data', e);
   }
+}
+
+// --- DATA PRIVACY & RECORD MANAGEMENT ---
+function clearUserRecords() {
+  const confirmed = confirm('Apakah Anda yakin ingin mengosongkan seluruh catatan absensi sholat di perangkat ini untuk memulai absensi pribadi dari awal?');
+  if (!confirmed) return;
+
+  AppState.records = [];
+  saveLocalData();
+  renderAll();
+  showLocationToast('Catatan absensi sholat berhasil dikosongkan. Anda dapat mulai mencatat dari nol.', 'success');
+}
+
+function loadMasterRecords() {
+  const confirmed = confirm('Muat data master absensi milik Harits (Pemilik) ke perangkat ini? Seluruh 9 catatan bawaan akan diterapkan.');
+  if (!confirmed) return;
+
+  AppState.records = JSON.parse(JSON.stringify(MASTER_RECORDS));
+  saveLocalData();
+  renderAll();
+  showLocationToast('Data master pemilik (Harits) berhasil dimuat!', 'success');
+}
+
+function triggerImportJson() {
+  const fileInput = document.getElementById('input-import-backup');
+  if (fileInput) fileInput.click();
+}
+
+function handleImportJsonFile(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data && Array.isArray(data.records)) {
+        AppState.records = data.records;
+        if (data.profile) AppState.profile = { ...AppState.profile, ...data.profile };
+        if (data.settings) AppState.settings = { ...AppState.settings, ...data.settings };
+        saveLocalData();
+        renderAll();
+        showLocationToast(`Berhasil memulihkan ${data.records.length} catatan absensi sholat!`, 'success');
+      } else {
+        showLocationToast('Format berkas cadangan .json tidak sesuai.', 'error');
+      }
+    } catch (err) {
+      showLocationToast('Gagal membaca berkas: pastikan format file JSON valid.', 'error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
 }
 
 // --- PRAYER SCHEDULE SERVICE ---
@@ -2711,6 +2764,10 @@ window.app = {
     }
   },
   exportData,
+  clearUserRecords,
+  loadMasterRecords,
+  triggerImportJson,
+  handleImportJsonFile,
   openPdfExportModal,
   closePdfExportModal,
   changePdfPeriod,
