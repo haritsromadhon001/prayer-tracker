@@ -20,6 +20,157 @@
 </head>
 <body>
 
+  <!-- ============================================================================== -->
+  <!-- FULL SCREEN AUTH LANDING GATEWAY (CLAUDE-INSPIRED)                             -->
+  <!-- ============================================================================== -->
+  <section id="landing-gate" class="landing-gate" style="display:flex;">
+    <div class="landing-container">
+      
+      <!-- Left Column: Branding, Hero Text, & Auth Form -->
+      <div class="landing-left">
+        <div class="landing-brand">
+          <div class="landing-brand-icon">
+            <img src="favicon.svg" alt="Logo" width="44" height="44" style="display:block;">
+          </div>
+          <div class="landing-brand-text">
+            <h2>Personal Prayer Tracker</h2>
+            <p>Website Absensi Sholat Pribadi</p>
+          </div>
+        </div>
+
+        <h1 class="landing-title">
+          Jelajahi Evaluasi Sholat<br>yang Lebih Bermakna
+        </h1>
+        <p class="landing-subtitle">
+          Mitra evaluasi konsistensi sholat fardhu &amp; sunnah pribadi Anda. Dilengkapi pencatatan mandiri, rekap model Excel, dan keamanan data cloud terenkripsi.
+        </p>
+
+        <!-- Auth Card -->
+        <div class="landing-auth-card">
+          <div class="landing-tabs">
+            <button type="button" class="landing-tab-btn active" id="landing-tab-btn-login" onclick="window.app.switchLandingTab('login')">Masuk (Login)</button>
+            <button type="button" class="landing-tab-btn" id="landing-tab-btn-register" onclick="window.app.switchLandingTab('register')">Daftar Akun Baru</button>
+          </div>
+
+          <!-- Alert message box -->
+          <div class="auth-alert" id="landing-auth-alert"></div>
+
+          <!-- Form Login -->
+          <form id="landing-form-login" onsubmit="window.app.submitLandingLogin(event)">
+            <div class="landing-input-group">
+              <label class="landing-label" for="landing-login-email">Alamat Email</label>
+              <input type="email" class="landing-input" id="landing-login-email" placeholder="nama@email.com" required autocomplete="email">
+            </div>
+            <div class="landing-input-group">
+              <label class="landing-label" for="landing-login-password">Kata Sandi</label>
+              <div class="password-input-wrapper">
+                <input type="password" class="landing-input" id="landing-login-password" placeholder="••••••••" required autocomplete="current-password" style="padding-right:2.5rem;">
+                <button type="button" class="password-toggle-btn" onclick="window.app.togglePasswordVisibility('landing-login-password')">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="landing-btn-primary" id="landing-btn-submit-login">
+              <span>Masuk ke Dashboard</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </form>
+
+          <!-- Form Register -->
+          <form id="landing-form-register" style="display:none;" onsubmit="window.app.submitLandingRegister(event)">
+            <div class="landing-input-group">
+              <label class="landing-label" for="landing-register-name">Nama Panggilan / Lengkap</label>
+              <input type="text" class="landing-input" id="landing-register-name" placeholder="Misal: Ahmad, Fulan" required>
+            </div>
+            <div class="landing-input-group">
+              <label class="landing-label" for="landing-register-email">Alamat Email</label>
+              <input type="email" class="landing-input" id="landing-register-email" placeholder="nama@email.com" required autocomplete="email">
+            </div>
+            <div class="landing-input-group">
+              <label class="landing-label" for="landing-register-password">Kata Sandi Baru</label>
+              <div class="password-input-wrapper">
+                <input type="password" class="landing-input" id="landing-register-password" placeholder="Minimal 6 karakter" required minlength="6" autocomplete="new-password" style="padding-right:2.5rem;">
+                <button type="button" class="password-toggle-btn" onclick="window.app.togglePasswordVisibility('landing-register-password')">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="landing-btn-primary" id="landing-btn-submit-register">
+              <span>Daftar &amp; Mulai Sekarang</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </form>
+
+          <div class="landing-divider">
+            <span>Atau</span>
+          </div>
+
+          <button type="button" class="landing-btn-guest" onclick="window.app.enterGuestMode()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>Lanjutkan sebagai Tamu (Mode Eksplorasi)</span>
+          </button>
+
+          <p class="landing-footer-note">
+            Data absensi Anda tersimpan aman dengan enkripsi cloud pribadi.
+          </p>
+        </div>
+      </div>
+
+      <!-- Right Column: Aesthetic Showcase Card -->
+      <div class="landing-right">
+        <div class="landing-showcase-card">
+          <div class="landing-showcase-badge">
+            <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#34d399; box-shadow:0 0 8px #34d399;"></span>
+            <span>Jadwal Sholat Presisi Waktu Nyata</span>
+          </div>
+
+          <div class="landing-next-prayer-box">
+            <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:0.35rem;">Sholat Berikutnya:</div>
+            <div style="font-size:1.75rem; font-weight:700; color:#ffffff; display:flex; justify-content:space-between; align-items:baseline;">
+              <span id="landing-preview-next-name">Magrib</span>
+              <span id="landing-preview-next-time" style="color:#34d399; font-size:1.5rem;">17:24 WIB</span>
+            </div>
+            <div style="font-size:0.75rem; color:#94a3b8; margin-top:0.25rem;" id="landing-preview-loc">Surabaya, Indonesia • Asia/Jakarta</div>
+          </div>
+
+          <div class="landing-prayer-preview-list">
+            <div class="landing-prayer-row">
+              <span class="prayer-name"><span>🌅</span> Subuh</span>
+              <span class="prayer-status">✓ Terlaksana</span>
+            </div>
+            <div class="landing-prayer-row">
+              <span class="prayer-name"><span>☀️</span> Zuhur</span>
+              <span class="prayer-status">✓ Terlaksana</span>
+            </div>
+            <div class="landing-prayer-row">
+              <span class="prayer-name"><span>🌤️</span> Asar</span>
+              <span class="prayer-status">✓ Terlaksana</span>
+            </div>
+            <div class="landing-prayer-row">
+              <span class="prayer-name"><span>🌇</span> Magrib</span>
+              <span class="prayer-status">✓ Terlaksana</span>
+            </div>
+            <div class="landing-prayer-row">
+              <span class="prayer-name"><span>🌙</span> Isya</span>
+              <span class="prayer-status">✓ Terlaksana</span>
+            </div>
+          </div>
+
+          <div class="landing-quote-box">
+            “Sesungguhnya sholat itu adalah kewajiban yang ditentukan waktunya atas orang-orang yang beriman.”
+            <div style="margin-top:4px; font-weight:600; color:#34d399; font-style:normal;">— QS. An-Nisa: 103</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================================== -->
+  <!-- MAIN APPLICATION LAYOUT (DASHBOARD & ALL FEATURES)                             -->
+  <!-- ============================================================================== -->
+  <div id="app-view" style="display:none; flex-direction:column; min-height:100vh;">
+
   <!-- Header & Desktop Navigation -->
   <header class="app-header">
     <div class="container nav-inner">
@@ -834,30 +985,30 @@
 
         <hr style="border:0; border-top:1px solid #e2e8f0; margin:1.25rem 0;">
 
-        <!-- Cadangan & Pemulihan Data -->
+        <!-- Ekspor & Impor Berkas -->
         <div class="form-group" style="margin-bottom:0.25rem;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; flex-wrap:wrap; gap:0.4rem;">
             <label class="form-label" style="margin-bottom:0; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:0.4rem;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Cadangan &amp; Pemulihan Data
+              Ekspor &amp; Impor Berkas
             </label>
-            <span style="font-size:0.75rem; color:#059669; font-weight:600; background:#ecfdf5; padding:2px 8px; border-radius:12px; border:1px solid #a7f3d0;">Format JSON</span>
+            <span style="font-size:0.75rem; color:#059669; font-weight:600; background:#ecfdf5; padding:2px 8px; border-radius:12px; border:1px solid #a7f3d0;">Berkas JSON</span>
           </div>
           <p style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:0.75rem; line-height:1.45;">
-            Cadangkan riwayat catatan sholat Anda ke dalam berkas JSON atau pulihkan data dari berkas cadangan sebelumnya.
+            Ekspor seluruh riwayat evaluasi sholat Anda ke dalam format JSON atau impor berkas arsip Anda.
           </p>
           <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
             <button type="button" class="btn-secondary" style="font-size:0.78rem; padding:0.45rem 0.75rem; display:flex; align-items:center; gap:0.35rem;" onclick="window.app.exportData('json')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Cadangkan Data (.json)
+              Ekspor Berkas (.json)
             </button>
             <button type="button" class="btn-secondary" style="font-size:0.78rem; padding:0.45rem 0.75rem; display:flex; align-items:center; gap:0.35rem;" onclick="window.app.triggerImportJson()">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              Pulihkan Data (.json)
+              Impor Berkas (.json)
             </button>
             <button type="button" class="btn-secondary" style="font-size:0.78rem; padding:0.45rem 0.75rem; color:#dc2626; border-color:#fecaca; background:#fff5f5; display:flex; align-items:center; gap:0.35rem;" onclick="window.app.clearUserRecords()">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-              Reset Data
+              Atur Ulang Catatan
             </button>
             <input type="file" id="input-import-backup" accept=".json" style="display:none;" onchange="window.app.handleImportJsonFile(event)">
           </div>
@@ -965,6 +1116,8 @@
       <span>Pengingat</span>
     </button>
   </nav>
+  </div> <!-- /#app-view -->
+
   <!-- Floating Toast Notification for Action & Location Feedback -->
   <div id="ppt-toast" class="ppt-toast" role="alert" aria-live="polite">
     <span id="ppt-toast-icon"></span>

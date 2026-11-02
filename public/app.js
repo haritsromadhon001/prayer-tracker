@@ -243,10 +243,16 @@ async function handleUserSignedIn(user) {
     AppState.userRole = user.email.toLowerCase() === 'haritsromadhon001@gmail.com' ? 'admin' : 'user';
   }
 
-  // 2. Update Header UI (User Pill, Role Badge)
+  // 2. Show App View and Hide Landing Gate
+  const landingGate = document.getElementById('landing-gate');
+  const appView = document.getElementById('app-view');
+  if (landingGate) landingGate.style.display = 'none';
+  if (appView) appView.style.display = 'flex';
+
+  // 3. Update Header UI (User Pill, Role Badge)
   updateAuthUIHeader();
 
-  // 3. Fetch User's Records from Supabase (Protected by RLS)
+  // 4. Fetch User's Records from Supabase (Protected by RLS)
   await fetchUserRecordsFromSupabase();
 
   renderAll();
@@ -258,6 +264,14 @@ function handleUserSignedOut(showNotification = false) {
   AppState.records = [];
   AppState.profile.display_name = 'Sahabat Sholat';
   localStorage.removeItem('ppt_records');
+
+  const landingGate = document.getElementById('landing-gate');
+  const appView = document.getElementById('app-view');
+  if (!AppState.isGuestExploring) {
+    if (landingGate) landingGate.style.display = 'flex';
+    if (appView) appView.style.display = 'none';
+  }
+
   updateAuthUIHeader();
   renderAll();
   if (showNotification) {
@@ -482,10 +496,124 @@ async function submitRegister(e) {
 
 async function handleLogout() {
   if (!confirm('Apakah Anda yakin ingin keluar dari akun?')) return;
+  AppState.isGuestExploring = false;
   if (supabaseClient) {
     await supabaseClient.auth.signOut();
   }
   handleUserSignedOut(true);
+}
+
+function enterGuestMode() {
+  AppState.isGuestExploring = true;
+  const landingGate = document.getElementById('landing-gate');
+  const appView = document.getElementById('app-view');
+  if (landingGate) landingGate.style.display = 'none';
+  if (appView) appView.style.display = 'flex';
+  showLocationToast('Memasuki dashboard dalam mode tamu eksplorasi.', 'info');
+}
+
+function switchLandingTab(tab = 'login') {
+  const btnLogin = document.getElementById('landing-tab-btn-login');
+  const btnRegister = document.getElementById('landing-tab-btn-register');
+  const formLogin = document.getElementById('landing-form-login');
+  const formRegister = document.getElementById('landing-form-register');
+  const alertBox = document.getElementById('landing-auth-alert');
+  if (alertBox) { alertBox.className = 'auth-alert'; alertBox.textContent = ''; }
+
+  if (tab === 'login') {
+    if (btnLogin) btnLogin.classList.add('active');
+    if (btnRegister) btnRegister.classList.remove('active');
+    if (formLogin) formLogin.style.display = 'block';
+    if (formRegister) formRegister.style.display = 'none';
+  } else {
+    if (btnLogin) btnLogin.classList.remove('active');
+    if (btnRegister) btnRegister.classList.add('active');
+    if (formLogin) formLogin.style.display = 'none';
+    if (formRegister) formRegister.style.display = 'block';
+  }
+}
+
+async function submitLandingLogin(e) {
+  e.preventDefault();
+  if (!supabaseClient) {
+    showLandingAuthAlert('Supabase client belum siap. Periksa koneksi internet Anda.', 'error');
+    return;
+  }
+  const email = document.getElementById('landing-login-email').value.trim();
+  const password = document.getElementById('landing-login-password').value;
+  const submitBtn = document.getElementById('landing-btn-submit-login');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<span>Memverifikasi...</span>'; }
+
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) {
+      showLandingAuthAlert(translateAuthError(error.message), 'error');
+    } else {
+      showLandingAuthAlert('Berhasil masuk! Membuka dashboard pribadi...', 'success');
+      if (data && data.user) {
+        await handleUserSignedIn(data.user);
+      }
+    }
+  } catch (err) {
+    showLandingAuthAlert('Terjadi kesalahan saat masuk: ' + err.message, 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<span>Masuk ke Dashboard</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+    }
+  }
+}
+
+async function submitLandingRegister(e) {
+  e.preventDefault();
+  if (!supabaseClient) {
+    showLandingAuthAlert('Supabase client belum siap. Periksa koneksi internet Anda.', 'error');
+    return;
+  }
+  const name = document.getElementById('landing-register-name').value.trim();
+  const email = document.getElementById('landing-register-email').value.trim();
+  const password = document.getElementById('landing-register-password').value;
+  const submitBtn = document.getElementById('landing-btn-submit-register');
+
+  if (password.length < 6) {
+    showLandingAuthAlert('Kata sandi harus minimal 6 karakter.', 'error');
+    return;
+  }
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<span>Mendaftarkan akun...</span>'; }
+
+  try {
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          display_name: name,
+        },
+      },
+    });
+    if (error) {
+      showLandingAuthAlert(translateAuthError(error.message), 'error');
+    } else {
+      showLandingAuthAlert('Pendaftaran akun berhasil! Membuka dashboard...', 'success');
+      if (data && data.user) {
+        await handleUserSignedIn(data.user);
+      }
+    }
+  } catch (err) {
+    showLandingAuthAlert('Terjadi kesalahan saat mendaftar: ' + err.message, 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<span>Daftar &amp; Mulai Sekarang</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+    }
+  }
+}
+
+function showLandingAuthAlert(msg, type = 'error') {
+  const box = document.getElementById('landing-auth-alert');
+  if (!box) return;
+  box.className = `auth-alert ${type}`;
+  box.textContent = msg;
 }
 
 function showAuthAlert(msg, type) {
@@ -1073,6 +1201,14 @@ function renderHeaderAndGreeting() {
       ? `Hitung mundur: ${nextInfo.countdown}`
       : `Menuju Subuh • ${nextInfo.countdown}`;
   }
+
+  // Update Landing Gateway Preview
+  const landNextName = document.getElementById('landing-preview-next-name');
+  const landNextTime = document.getElementById('landing-preview-next-time');
+  const landLoc = document.getElementById('landing-preview-loc');
+  if (landNextName && nextInfo) landNextName.textContent = nextInfo.label;
+  if (landNextTime && nextInfo) landNextTime.textContent = `${nextInfo.time} WIB`;
+  if (landLoc && AppState.settings) landLoc.textContent = `${AppState.settings.city} • ${AppState.settings.timezone}`;
 }
 
 function updateDashboardDateUI() {
@@ -3146,6 +3282,11 @@ window.app = {
   submitLogin,
   submitRegister,
   handleLogout,
+  // Claude-Style Landing Gateway Methods
+  enterGuestMode,
+  switchLandingTab,
+  submitLandingLogin,
+  submitLandingRegister,
 };
 
 // Run when DOM ready
