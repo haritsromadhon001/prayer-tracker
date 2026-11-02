@@ -177,6 +177,333 @@ function showLocationToast(msg, type = 'loading') {
   }
 }
 
+// ==============================================================================
+// SUPABASE CLIENT CONFIGURATION & CLOUD PERSISTENCE
+// ==============================================================================
+const SUPABASE_URL = 'https://ocucfsglxgvgwjujncst.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jdWNmc2dseGd2Z3dqdWpuY3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NzUxMTIsImV4cCI6MjEwNzE1MTExMn0.doyKumd4TaK9bfwcrMaWB-5BDBoskxt-mjJ96qu9QMw';
+let supabaseClient = null;
+
+function initSupabaseAuth() {
+  try {
+    if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+        }
+      });
+    }
+
+    if (!supabaseClient) return;
+
+    // Check existing active session
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (session && session.user) {
+        handleUserSignedIn(session.user);
+      } else {
+        handleUserSignedOut(false);
+      }
+    });
+
+    // Listen for auth state changes
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (session && session.user) {
+        await handleUserSignedIn(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        handleUserSignedOut(true);
+      }
+    });
+  } catch (err) {
+    console.warn('Supabase auth initialization error:', err);
+  }
+}
+
+async function handleUserSignedIn(user) {
+  AppState.user = user;
+
+  // 1. Fetch user profile from Supabase to get role and display_name
+  try {
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profile) {
+      AppState.userRole = profile.role || (user.email.toLowerCase() === 'haritsromadhon001@gmail.com' ? 'admin' : 'user');
+      if (profile.display_name) AppState.profile.display_name = profile.display_name;
+    } else {
+      AppState.userRole = user.email.toLowerCase() === 'haritsromadhon001@gmail.com' ? 'admin' : 'user';
+      if (AppState.userRole === 'admin') AppState.profile.display_name = 'Harits Abdullah';
+    }
+  } catch (err) {
+    console.warn('Error fetching profile:', err);
+    AppState.userRole = user.email.toLowerCase() === 'haritsromadhon001@gmail.com' ? 'admin' : 'user';
+  }
+
+  // 2. Update Header UI (User Pill, Role Badge)
+  updateAuthUIHeader();
+
+  // 3. Fetch User's Records from Supabase (Protected by RLS)
+  await fetchUserRecordsFromSupabase();
+
+  renderAll();
+}
+
+function handleUserSignedOut(showNotification = false) {
+  AppState.user = null;
+  AppState.userRole = 'guest';
+  AppState.records = [];
+  AppState.profile.display_name = 'Sahabat Sholat';
+  localStorage.removeItem('ppt_records');
+  updateAuthUIHeader();
+  renderAll();
+  if (showNotification) {
+    showLocationToast('Anda telah keluar dari akun.', 'info');
+  }
+}
+
+function updateAuthUIHeader() {
+  const authBtn = document.getElementById('btn-header-auth');
+  const userPill = document.getElementById('user-header-pill');
+  const avatarEl = document.getElementById('header-avatar');
+  const nameEl = document.getElementById('header-name');
+  const roleBadge = document.getElementById('header-role-badge');
+
+  if (AppState.user) {
+    if (authBtn) authBtn.style.display = 'none';
+    if (userPill) userPill.style.display = 'flex';
+
+    const displayName = AppState.profile.display_name || (AppState.user.email ? AppState.user.email.split('@')[0] : 'User');
+    if (avatarEl) avatarEl.textContent = displayName.charAt(0).toUpperCase();
+    if (nameEl) nameEl.textContent = displayName;
+    if (roleBadge) {
+      const isAdmin = AppState.userRole === 'admin';
+      roleBadge.textContent = isAdmin ? 'Admin' : 'Member';
+      roleBadge.className = `user-role-badge ${isAdmin ? 'admin' : 'user'}`;
+    }
+  } else {
+    if (authBtn) authBtn.style.display = 'flex';
+    if (userPill) userPill.style.display = 'none';
+  }
+}
+
+async function fetchUserRecordsFromSupabase() {
+  if (!supabaseClient || !AppState.user) return;
+  try {
+    const { data, error } = await supabaseClient
+      .from('prayer_records')
+      .select('*')
+      .eq('user_id', AppState.user.id)
+      .order('prayer_date', { ascending: false });
+
+    if (!error && Array.isArray(data)) {
+      // Jika akun admin Harits, pastikan data legacy 9 catatan master tersinkronisasi jika belum ada
+      if (AppState.userRole === 'admin' && MASTER_RECORDS.length > 0) {
+        const dbKeys = new Set(data.map(r => `${r.prayer_date}_${r.prayer_name}`));
+        for (const masterRec of MASTER_RECORDS) {
+          if (!dbKeys.has(`${masterRec.prayer_date}_${masterRec.prayer_name}`)) {
+            await syncRecordToSupabase(masterRec);
+            data.push({ ...masterRec, user_id: AppState.user.id });
+          }
+        }
+      }
+      AppState.records = data;
+      saveLocalData();
+      renderAll();
+    }
+  } catch (err) {
+    console.warn('Error fetching records from Supabase:', err);
+  }
+}
+
+async function syncRecordToSupabase(record) {
+  if (!supabaseClient || !AppState.user) return;
+  try {
+    const payload = {
+      user_id: AppState.user.id,
+      prayer_date: record.prayer_date,
+      prayer_name: record.prayer_name,
+      status: record.status,
+      completed_at: record.completed_at || null,
+      timing_category: record.timing_category || null,
+      congregation_type: record.congregation_type || null,
+      rakaat: record.rakaat || null,
+      sub_prayers: record.sub_prayers || null,
+      notes: record.notes || null,
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await supabaseClient.from('prayer_records').upsert(payload, {
+      onConflict: 'user_id, prayer_date, prayer_name'
+    });
+    if (error) console.warn('Supabase upsert warning:', error.message);
+  } catch (err) {
+    console.warn('Supabase sync error:', err);
+  }
+}
+
+async function deleteRecordFromSupabase(dateStr, prayerName) {
+  if (!supabaseClient || !AppState.user) return;
+  try {
+    const { error } = await supabaseClient
+      .from('prayer_records')
+      .delete()
+      .eq('user_id', AppState.user.id)
+      .eq('prayer_date', dateStr)
+      .eq('prayer_name', prayerName);
+    if (error) console.warn('Supabase delete warning:', error.message);
+  } catch (err) {
+    console.warn('Supabase delete error:', err);
+  }
+}
+
+// --- AUTH MODAL CONTROLLERS ---
+function openAuthModal(tab = 'login') {
+  switchAuthTab(tab);
+  const alertBox = document.getElementById('auth-alert-box');
+  if (alertBox) { alertBox.className = 'auth-alert'; alertBox.textContent = ''; }
+  const modal = document.getElementById('modal-auth');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById('modal-auth');
+  if (modal) modal.style.display = 'none';
+}
+
+function switchAuthTab(tab) {
+  const btnLogin = document.getElementById('tab-btn-login');
+  const btnRegister = document.getElementById('tab-btn-register');
+  const formLogin = document.getElementById('form-login');
+  const formRegister = document.getElementById('form-register');
+  const title = document.getElementById('auth-modal-title');
+  const alertBox = document.getElementById('auth-alert-box');
+  if (alertBox) { alertBox.className = 'auth-alert'; alertBox.textContent = ''; }
+
+  if (tab === 'login') {
+    if (btnLogin) btnLogin.classList.add('active');
+    if (btnRegister) btnRegister.classList.remove('active');
+    if (formLogin) formLogin.style.display = 'block';
+    if (formRegister) formRegister.style.display = 'none';
+    if (title) title.textContent = 'Masuk ke Akun Anda';
+  } else {
+    if (btnLogin) btnLogin.classList.remove('active');
+    if (btnRegister) btnRegister.classList.add('active');
+    if (formLogin) formLogin.style.display = 'none';
+    if (formRegister) formRegister.style.display = 'block';
+    if (title) title.textContent = 'Daftar Akun Baru';
+  }
+}
+
+function togglePasswordVisibility(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+async function submitLogin(e) {
+  e.preventDefault();
+  if (!supabaseClient) {
+    showAuthAlert('Supabase client belum siap. Periksa koneksi internet Anda.', 'error');
+    return;
+  }
+
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const submitBtn = document.getElementById('btn-submit-login');
+
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Memverifikasi...'; }
+
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) {
+      showAuthAlert(translateAuthError(error.message), 'error');
+    } else {
+      showAuthAlert('Berhasil masuk! Memuat data Anda...', 'success');
+      setTimeout(() => {
+        closeAuthModal();
+      }, 500);
+    }
+  } catch (err) {
+    showAuthAlert('Terjadi kesalahan saat masuk: ' + err.message, 'error');
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Masuk ke Akun'; }
+  }
+}
+
+async function submitRegister(e) {
+  e.preventDefault();
+  if (!supabaseClient) {
+    showAuthAlert('Supabase client belum siap. Periksa koneksi internet Anda.', 'error');
+    return;
+  }
+
+  const name = document.getElementById('register-name').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value;
+  const submitBtn = document.getElementById('btn-submit-register');
+
+  if (password.length < 6) {
+    showAuthAlert('Kata sandi harus minimal 6 karakter.', 'error');
+    return;
+  }
+
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Mendaftarkan...'; }
+
+  try {
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          display_name: name
+        }
+      }
+    });
+
+    if (error) {
+      showAuthAlert(translateAuthError(error.message), 'error');
+    } else {
+      if (data.session) {
+        showAuthAlert('Pendaftaran berhasil! Mengarahkan ke dashboard pribadi...', 'success');
+        setTimeout(() => { closeAuthModal(); }, 600);
+      } else {
+        showAuthAlert('Pendaftaran berhasil! Silakan periksa email Anda atau langsung klik Masuk.', 'success');
+      }
+    }
+  } catch (err) {
+    showAuthAlert('Gagal mendaftar: ' + err.message, 'error');
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Daftar Akun Baru'; }
+  }
+}
+
+async function handleLogout() {
+  if (!confirm('Apakah Anda yakin ingin keluar dari akun?')) return;
+  if (supabaseClient) {
+    await supabaseClient.auth.signOut();
+  }
+  handleUserSignedOut(true);
+}
+
+function showAuthAlert(msg, type) {
+  const alertBox = document.getElementById('auth-alert-box');
+  if (!alertBox) return;
+  alertBox.textContent = msg;
+  alertBox.className = `auth-alert ${type}`;
+}
+
+function translateAuthError(errMsg) {
+  if (!errMsg) return 'Terjadi kesalahan autentikasi.';
+  if (errMsg.includes('Invalid login credentials')) return 'Email atau kata sandi tidak sesuai.';
+  if (errMsg.includes('User already registered')) return 'Email ini sudah terdaftar. Silakan klik Masuk.';
+  if (errMsg.includes('Password should be at least')) return 'Kata sandi minimal 6 karakter.';
+  if (errMsg.includes('Email not confirmed')) return 'Email belum dikonfirmasi. Periksa kotak masuk/spam email Anda.';
+  return errMsg;
+}
+
 // --- MASTER DATA CATATAN SHOLAT PRIBADI ---
 // Data absensi master yang tersimpan di dalam website agar otomatis sama persis di Laptop maupun HP tanpa perlu sync
 const MASTER_RECORDS = [
@@ -312,6 +639,8 @@ const MASTER_RECORDS = [
 
 // --- APP STATE ---
 const AppState = {
+  user: null, // Logged in Supabase user
+  userRole: 'guest', // 'admin' | 'user' | 'guest'
   currentDate: new Date(),
   selectedDateStr: getLocalDateStr(new Date()),
   calendarMonth: new Date().getMonth(),
@@ -1136,9 +1465,9 @@ function quickToggleExcelCell(dateStr, prayerName) {
 
   if (!existing) {
     // 1. None -> Completed
-    AppState.records.push({
+    const newRec = {
       id: `rec-${Date.now()}-${prayerName}`,
-      user_id: 'user-self',
+      user_id: AppState.user ? AppState.user.id : 'user-self',
       prayer_date: dateStr,
       prayer_name: prayerName,
       status: 'completed',
@@ -1149,15 +1478,19 @@ function quickToggleExcelCell(dateStr, prayerName) {
       notes: null,
       created_at: now,
       updated_at: now,
-    });
+    };
+    AppState.records.push(newRec);
+    syncRecordToSupabase(newRec);
     playSereneChime();
   } else if (existing.status === 'completed') {
     // 2. Completed -> Not Completed
     existing.status = 'not_completed';
     existing.updated_at = now;
+    syncRecordToSupabase(existing);
   } else {
     // 3. Not Completed -> Reset (Delete)
     AppState.records = AppState.records.filter(r => !(r.prayer_date === dateStr && r.prayer_name === prayerName));
+    deleteRecordFromSupabase(dateStr, prayerName);
   }
 
   saveLocalData();
@@ -1707,7 +2040,7 @@ function saveRecordFromModal() {
 
   const recordPayload = {
     id: idx >= 0 ? AppState.records[idx].id : `rec-${Date.now()}-${prayerName}`,
-    user_id: 'user-self',
+    user_id: AppState.user ? AppState.user.id : 'user-self',
     prayer_date: dateStr,
     prayer_name: prayerName,
     status,
@@ -1726,6 +2059,8 @@ function saveRecordFromModal() {
   } else {
     AppState.records.push(recordPayload);
   }
+
+  syncRecordToSupabase(recordPayload);
 
   AppState.selectedDateStr = dateStr;
   saveLocalData();
@@ -1746,6 +2081,7 @@ function deleteCurrentRecord() {
   }
 
   AppState.records = AppState.records.filter(r => !(r.prayer_date === dateStr && r.prayer_name === prayerName));
+  deleteRecordFromSupabase(dateStr, prayerName);
   saveLocalData();
   closeRecordModal();
   renderAll();
@@ -1761,7 +2097,7 @@ function quickFillAll(dateStr, status = 'completed') {
     const idx = AppState.records.findIndex(r => r.prayer_date === dateStr && r.prayer_name === name);
     const rec = {
       id: idx >= 0 ? AppState.records[idx].id : `rec-${Date.now()}-${name}`,
-      user_id: 'user-self',
+      user_id: AppState.user ? AppState.user.id : 'user-self',
       prayer_date: dateStr,
       prayer_name: name,
       status,
@@ -1776,6 +2112,8 @@ function quickFillAll(dateStr, status = 'completed') {
     };
     if (idx >= 0) AppState.records[idx] = rec;
     else AppState.records.push(rec);
+
+    syncRecordToSupabase(rec);
   });
 
   saveLocalData();
@@ -2489,6 +2827,7 @@ function applyCustomLocationSuccess(city, country, lat, lng, timezone) {
 // --- INITIALIZATION ---
 function initApp() {
   loadLocalData();
+  initSupabaseAuth();
   populateCitySelect();
 
   // Populate Excel month selector
@@ -2799,6 +3138,14 @@ window.app = {
   renderPdfPreview,
   downloadPdfReport,
   printPdfReport,
+  // Supabase Auth Methods
+  openAuthModal,
+  closeAuthModal,
+  switchAuthTab,
+  togglePasswordVisibility,
+  submitLogin,
+  submitRegister,
+  handleLogout,
 };
 
 // Run when DOM ready

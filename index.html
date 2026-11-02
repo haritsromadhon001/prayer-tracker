@@ -62,6 +62,25 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:4px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           Pengaturan
         </button>
+
+        <!-- Auth Button for Guest -->
+        <button class="btn-primary btn-header-auth" id="btn-header-auth" onclick="window.app.openAuthModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Masuk / Daftar</span>
+        </button>
+
+        <!-- Auth User Pill (when signed in) -->
+        <div class="user-pill-container" id="user-header-pill" style="display:none;">
+          <div class="user-pill" onclick="window.app.openSettingsModal()" style="cursor:pointer;" title="Buka Pengaturan Akun">
+            <span class="user-avatar" id="header-avatar">H</span>
+            <span class="user-name" id="header-name">Harits</span>
+            <span class="user-role-badge admin" id="header-role-badge">Admin</span>
+          </div>
+          <button class="btn-logout" title="Keluar dari Akun" onclick="window.app.handleLogout()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Keluar</span>
+          </button>
+        </div>
       </nav>
     </div>
   </header>
@@ -550,6 +569,83 @@
   </main>
 
   <!-- ========================================== -->
+  <!-- MODAL: AUTENTIKASI SUPABASE (LOGIN & REGISTER) -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="modal-auth" style="display:none;">
+    <div class="modal-content" style="max-width:440px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <img src="favicon.svg" alt="Logo" width="28" height="28">
+          <h3 class="modal-title" id="auth-modal-title">Akun Absensi Sholat</h3>
+        </div>
+        <button class="modal-close-btn" onclick="window.app.closeAuthModal()" title="Tutup">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem 1.5rem;">
+        <!-- Tabs Login vs Register -->
+        <div class="auth-tabs">
+          <button type="button" class="auth-tab-btn active" id="tab-btn-login" onclick="window.app.switchAuthTab('login')">Masuk (Login)</button>
+          <button type="button" class="auth-tab-btn" id="tab-btn-register" onclick="window.app.switchAuthTab('register')">Daftar Akun Baru</button>
+        </div>
+
+        <!-- Alert Message Box -->
+        <div class="auth-alert" id="auth-alert-box"></div>
+
+        <!-- Form Login -->
+        <form id="form-login" onsubmit="window.app.submitLogin(event)">
+          <div class="form-group">
+            <label class="form-label" for="login-email">Alamat Email</label>
+            <input type="email" class="form-input" id="login-email" placeholder="nama@email.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="login-password">Kata Sandi</label>
+            <div class="password-input-wrapper">
+              <input type="password" class="form-input" id="login-password" placeholder="••••••••" required autocomplete="current-password" style="padding-right:2.5rem;">
+              <button type="button" class="password-toggle-btn" onclick="window.app.togglePasswordVisibility('login-password')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary" id="btn-submit-login" style="width:100%; justify-content:center; padding:0.65rem 1rem; margin-top:0.5rem; font-weight:700;">
+            Masuk ke Akun
+          </button>
+        </form>
+
+        <!-- Form Register -->
+        <form id="form-register" style="display:none;" onsubmit="window.app.submitRegister(event)">
+          <div class="form-group">
+            <label class="form-label" for="register-name">Nama Panggilan / Lengkap</label>
+            <input type="text" class="form-input" id="register-name" placeholder="Misal: Ahmad, Fulan" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="register-email">Alamat Email</label>
+            <input type="email" class="form-input" id="register-email" placeholder="nama@email.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="register-password">Kata Sandi Baru</label>
+            <div class="password-input-wrapper">
+              <input type="password" class="form-input" id="register-password" placeholder="Minimal 6 karakter" required minlength="6" autocomplete="new-password" style="padding-right:2.5rem;">
+              <button type="button" class="password-toggle-btn" onclick="window.app.togglePasswordVisibility('register-password')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary" id="btn-submit-register" style="width:100%; justify-content:center; padding:0.65rem 1rem; margin-top:0.5rem; font-weight:700;">
+            Daftar Akun Baru
+          </button>
+        </form>
+
+        <!-- Privacy Notice Card -->
+        <div class="auth-notice-card">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="display:inline; vertical-align:text-bottom; margin-right:4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <strong>Privasi Terjamin</strong>: Setiap akun memiliki data absensi sholat masing-masing yang tersimpan aman di database Supabase dengan enkripsi &amp; Row Level Security (RLS). Data Anda tidak akan terlihat oleh pengguna lain.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
   <!-- MODAL: ABSENSI SHOLAT (FARDHU & SUNNAH) -->
   <!-- ========================================== -->
   <div class="modal-overlay" id="modal-record-prayer" style="display:none;">
@@ -880,6 +976,7 @@
     <span id="ppt-toast-msg">Notifikasi</span>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="html2pdf.bundle.min.js"></script>
   <script src="app.js?v=2.2"></script>
 </body>
