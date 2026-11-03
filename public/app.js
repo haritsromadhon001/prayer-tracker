@@ -233,10 +233,15 @@ async function handleUserSignedIn(user) {
 
     if (profile) {
       AppState.userRole = profile.role || (user.email.toLowerCase() === 'haritsromadhon001@gmail.com' ? 'admin' : 'user');
-      if (profile.display_name) AppState.profile.display_name = profile.display_name;
+      
+      // If local already has a customized display_name (e.g. Harits Abdurohman) that differs from the old default 'Harits Abdullah', sync local to Supabase
+      if (profile.display_name === 'Harits Abdullah' && AppState.profile.display_name && AppState.profile.display_name !== 'Harits Abdullah' && AppState.profile.display_name !== 'Sahabat Sholat') {
+        await supabaseClient.from('profiles').update({ display_name: AppState.profile.display_name, updated_at: new Date().toISOString() }).eq('id', user.id);
+      } else if (profile.display_name) {
+        AppState.profile.display_name = profile.display_name;
+      }
     } else {
       AppState.userRole = user.email.toLowerCase() === 'haritsromadhon001@gmail.com' ? 'admin' : 'user';
-      if (AppState.userRole === 'admin') AppState.profile.display_name = 'Harits Abdullah';
     }
   } catch (err) {
     console.warn('Error fetching profile:', err);
@@ -1208,7 +1213,12 @@ function renderHeaderAndGreeting() {
   const landLoc = document.getElementById('landing-preview-loc');
   if (landNextName && nextInfo) landNextName.textContent = nextInfo.label;
   if (landNextTime && nextInfo) landNextTime.textContent = `${nextInfo.time} WIB`;
-  if (landLoc && AppState.settings) landLoc.textContent = `${AppState.settings.city} • ${AppState.settings.timezone}`;
+  if (landLoc) {
+    const locCity = (AppState.settings && AppState.settings.location_name) ? AppState.settings.location_name : 'Surabaya';
+    const locCountry = (AppState.settings && AppState.settings.country) ? AppState.settings.country : 'Indonesia';
+    const locTz = (AppState.profile && AppState.profile.timezone) ? AppState.profile.timezone : 'Asia/Jakarta';
+    landLoc.textContent = `${locCity}, ${locCountry} • ${locTz}`;
+  }
 }
 
 function updateDashboardDateUI() {
@@ -3143,6 +3153,21 @@ window.app = {
       if (nameInput.toLowerCase().includes('harits')) {
         localStorage.setItem('ppt_is_owner', 'true');
       }
+
+      // Synchronize updated display_name to Supabase profiles table
+      if (supabaseClient && AppState.user) {
+        try {
+          await supabaseClient
+            .from('profiles')
+            .update({ 
+              display_name: nameInput, 
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', AppState.user.id);
+        } catch (dbErr) {
+          console.warn('Failed to update profile display_name in Supabase:', dbErr);
+        }
+      }
     }
 
     if (cityInput && cityInput !== 'custom') {
@@ -3161,11 +3186,12 @@ window.app = {
     AppState.settings.asr_method = asrInput;
 
     saveLocalData();
+    updateAuthUIHeader();
     document.getElementById('modal-settings').style.display = 'none';
 
     await fetchSchedule();
     renderAll();
-    showLocationToast(`✓ Pengaturan disimpan: ${AppState.settings.location_name}, ${AppState.settings.country}`, 'success');
+    showLocationToast(`✓ Pengaturan disimpan: ${AppState.profile.display_name} • ${AppState.settings.location_name}`, 'success');
   },
   useGeolocation: async () => {
     showLocationToast('Sedang mendeteksi lokasi dan negara Anda...', 'loading');

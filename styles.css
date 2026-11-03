@@ -2962,7 +2962,7 @@ body {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-main);
-  max-width: 110px;
+  max-width: 175px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
